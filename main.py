@@ -284,7 +284,6 @@ class Minefield:
 			upleft    = lambda n=1, nx=x, ny=y: gamefield[ny - n][nx - n],
 			downright = lambda n=1, nx=x, ny=y: gamefield[ny + n][nx + n],
 			downleft  = lambda n=1, nx=x, ny=y: gamefield[ny + n][nx - n],)
-
 		def check(obj=self, directions=[]):
 			# check how many mines are nearby
 			_directions = directions
@@ -301,7 +300,7 @@ class Minefield:
 			print(_found)
 			return _found
 
-		def branch(direction):
+		def branch(direction, obj=self):
 			# nested method to yield minefields until finding a mine
 			print('branching ' + direction)
 			index = 1
@@ -309,7 +308,7 @@ class Minefield:
 			try:
 				while True:
 					print(f'[{index}] Branching {direction}.')
-					yield go[direction](index)
+					yield go[direction](index, obj.x, obj.y)
 					index += 1
 			except Exception as e:
 				print(e)
@@ -317,18 +316,24 @@ class Minefield:
 		inicheck = check() # first make sure there are no mines nearby
 		checked = dict()
 		go_cardinal = list(go.items())[0:4]
-		go_fan = iter(go_cardinal)
+		go_fan = go_cardinal.copy()
+		go_fan = iter(go_fan)
+		next(go_fan)
 		for direction, thisfield in go_cardinal:
 			if direction in inicheck:
 				continue  # there's already a mine here so there's no need to check
 			for i in branch(direction):
 				if len(check(i)) > 0:
 					i.button['text'] = len(check(i))
+					i.state = 'dug'
 					break #the next field in this direction is a mine, stop here
 				i.state = 'dug'
-				for e in branch(next(go_fan)[0]):
+				big_fan, _ = next(go_fan, 'up')
+				print('Fanning '+ big_fan)
+				for e in branch(big_fan, i):
 					if len(check(e)) > 0:
 						e.button['text'] = len(check(e))
+						e.state = 'dug'
 						break
 					e.state = 'dug'
 
