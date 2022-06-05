@@ -290,13 +290,14 @@ class Minefield:
 			for i, f in list(go.items()):
 				try:
 					if f().state.value <= 1:
-						if go[there]().ismine:
+						if f().ismine:
 							_found.append(i)
 				except:
 					continue
 			return _found
 
 		checklist = check()
+		print(checklist)
 		if self.ismine:
 			return
 		if len(checklist) > 0:
