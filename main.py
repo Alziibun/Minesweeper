@@ -255,7 +255,6 @@ class Minefield:
 						print('BOOM!')
 					else:
 						print('The player is safe... for now.')
-					self.state = 'dug'
 					self.bloom()
 				else:
 					print('The Player cannot dig here.')
@@ -269,73 +268,48 @@ class Minefield:
 
 	def bloom(self):
 		# branch out and find mines
+		if self.state.value > 1:
+			return
 		gamefield = self._game.field
+		_max  = self._game.rules['size'] - 1
 		x, y = self.cord
 		go = dict(
-			up        = lambda n=1, nx=x, ny=y: gamefield[ny - n][nx + 0],
-			right     = lambda n=1, nx=x, ny=y: gamefield[ny + 0][nx + n], 
-			down      = lambda n=1, nx=x, ny=y: gamefield[ny + n][nx + 0],
-			left      = lambda n=1, nx=x, ny=y: gamefield[ny + 0][nx - n],
+			up        = lambda: gamefield[y - 1][x + 0] if y > 0 else None,
+			right     = lambda: gamefield[y + 0][x + 1] if x != _max else None, 
+			down      = lambda: gamefield[y + 1][x + 0] if y != _max else None,
+			left      = lambda: gamefield[y + 0][x - 1] if x > 0 else None,
 
 			# used for check()
-			upright   = lambda n=1, nx=x, ny=y: gamefield[ny - n][nx + n],
-			upleft    = lambda n=1, nx=x, ny=y: gamefield[ny - n][nx - n],
-			downright = lambda n=1, nx=x, ny=y: gamefield[ny + n][nx + n],
-			downleft  = lambda n=1, nx=x, ny=y: gamefield[ny + n][nx - n],)
-		def check(obj=self, directions=[]):
+			upright   = lambda: gamefield[y - 1][x + 1] if (y != 0 and x != _max) else None,
+			upleft    = lambda: gamefield[y - 1][x - 1] if (0 not in [x, y]) else None,
+			downright = lambda: gamefield[y + 1][x + 1] if (_max not in [x, y]) else None,
+			downleft  = lambda: gamefield[y + 1][x - 1] if (x != 0 and y != _max) else None)
+		def check():
 			# check how many mines are nearby
-			_directions = directions
 			_found = []
-			gox, goy = obj.cord
-			if len(_directions) == 0:
-				# creates a default list based on fresh, untouched minefields
-				for i, v in list(go.items()):
-					if v().state.value <= 1:
-						_directions.append(i)
-			try:
-				for there in _directions:
-					if go[there](nx = gox, ny = goy).ismine:
-						_found.append(there)
-			except:
-				pass
+			for i, f in list(go.items()):
+				try:
+					if f().state.value <= 1:
+						if go[there]().ismine:
+							_found.append(i)
+				except:
+					continue
 			return _found
 
-		def branch(direction, obj=self):
-			# nested method to yield minefields until finding a mine
-			index = 1
-			fields = []
-			try:
-				while True:
-					# print(f'[{index}] Branching {direction}.')
-					yield go[direction](index, obj.x, obj.y)
-					index += 1
-			except Exception as e:
-				print(e)
+		checklist = check()
+		if self.ismine:
+			return
+		if len(checklist) > 0:
+			self.button['text'] = str(len(checklist))
+			return
+		self.state = 'dug'
+		for direction, f in list(go.items()):
+			if f() == None:
+				continue
+			f().bloom()
 
-		inicheck = check() # first make sure there are no mines nearby
-		checked = dict()
-		go_cardinal = list(go.items())[0:4]
-		go_fan = go_cardinal.copy()
-		go_fan = iter(go_fan)
-		next(go_fan)
-		for direction, thisfield in go_cardinal:
-			if direction in inicheck:
-				continue  # there's already a mine here so there's no need to check
-			for i in branch(direction):
-				if len(check(i)) > 0:
-					i.button['text'] = len(check(i))
-					i.state = 'dug'
-					break #the next field in this direction is a mine, stop here
-				i.state = 'dug'
-				big_fan, _ = next(go_fan, 'up')
-				print(f'Origin: ({i.x}, {i.y}) | Fanning {big_fan}.')
-				for e in branch(big_fan, i):
-					if len(check(e)) > 0:
-						e.button['text'] = len(check(e))
-						e.state = 'dug'
-						break
-					e.state = 'dug'	
-			print(f'Finished branching {direction}.')
+
+
 
 class Window:
 	"""
