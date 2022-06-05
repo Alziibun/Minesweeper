@@ -88,10 +88,8 @@ class Player:
 	def __init__(self, Game, name="UNKNOWN"):
 		print('Initializing Player: ' + name)
 		self._name = name 
-		print(Game.rules)
 		self.flags = int( Game.rules['flag_limit'] )
 		self._inf_flags = Game.rules['flag_limit'] is (bool and True)
-		print('infinite flags? ' + str(self._inf_flags))
 		self.mouse = Mouse()
 
 	"""
@@ -120,7 +118,7 @@ class Mouse:
 
 		# to be needlessly elegant
 		def __init__(self, value):
-			print('Creating Mouse class.')
+			print('Creating Mouse class...')
 			#assign a link for each value in mouse states
 			cls = self.__class__
 			if len(cls):
@@ -223,7 +221,7 @@ class Minefield:
 						button['relief'] = SUNKEN
 					case 'flagged':
 						button['text'] = 'P'
-				print('Minefield has been ' + s)
+				print(f'The Minefield at ({self.x}, {self.y}) has been {s}.')
 				self._state = self.states[s]
 		except:
 			raise ValueError("Invalid Minefield state.")
@@ -294,20 +292,21 @@ class Minefield:
 				for i, v in list(go.items()):
 					if v().state.value <= 1:
 						_directions.append(i)
-			for there in _directions:
-				if go[there](nx = gox, ny = goy).ismine:
-					_found.append(there)
-			print(_found)
+			try:
+				for there in _directions:
+					if go[there](nx = gox, ny = goy).ismine:
+						_found.append(there)
+			except:
+				pass
 			return _found
 
 		def branch(direction, obj=self):
 			# nested method to yield minefields until finding a mine
-			print('branching ' + direction)
 			index = 1
 			fields = []
 			try:
 				while True:
-					print(f'[{index}] Branching {direction}.')
+					# print(f'[{index}] Branching {direction}.')
 					yield go[direction](index, obj.x, obj.y)
 					index += 1
 			except Exception as e:
@@ -329,13 +328,14 @@ class Minefield:
 					break #the next field in this direction is a mine, stop here
 				i.state = 'dug'
 				big_fan, _ = next(go_fan, 'up')
-				print('Fanning '+ big_fan)
+				print(f'Origin: ({i.x}, {i.y}) | Fanning {big_fan}.')
 				for e in branch(big_fan, i):
 					if len(check(e)) > 0:
 						e.button['text'] = len(check(e))
 						e.state = 'dug'
 						break
-					e.state = 'dug'
+					e.state = 'dug'	
+			print(f'Finished branching {direction}.')
 
 class Window:
 	"""
