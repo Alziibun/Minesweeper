@@ -297,11 +297,11 @@ class Minefield:
 			return _found
 
 		checklist = check()
-		print(checklist)
 		if self.ismine:
 			return
 		if len(checklist) > 0:
 			self.button['text'] = str(len(checklist))
+			self.state = 'dug'
 			return
 		self.state = 'dug'
 		for direction, f in list(go.items()):
