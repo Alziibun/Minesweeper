@@ -179,8 +179,8 @@ class Minefield(Game):
 		self._x = 0
 		self._y = 0
 		self._button = Button(Game.current.window.playfield,
-			padx=10,
-			pady=3)
+			height=1,
+			width=2)
 		self._button.configure(command=lambda: self.onclick())
 
 	"""
