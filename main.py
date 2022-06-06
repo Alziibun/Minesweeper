@@ -1,4 +1,5 @@
 from tkinter import *
+from tkinter import ttk
 
 tk = Tk()
 
@@ -8,6 +9,7 @@ from enum import Enum
 Decoder = json.JSONDecoder()
 Encoder = json.JSONEncoder()
 
+
 class Game:
 	"""
 	Handles Game data
@@ -16,46 +18,50 @@ class Game:
 	2) Create new Minefields when needed
 	3) Announce completion of round
 	"""
-	def __init__(self, size = 10, mines = 10, flag_limit = True):
+	current = None
+	field   = list()
+	player  = None
+	window  = None
+	rules   = dict(
+		size       = 10,
+		mines      = 10,
+		flag_limit = 0)
+	def __init__(self, size=10, mines=10, flag_limit = 0):
 		print('Initializing new Game.')
-		self.scores = self.download_scores()
-		# define game rules
-		self.rules = {
-			'size'  : size,
-			'mines' : mines,
-			'flag_limit' : flag_limit
-		}
-		self._field = list()
+		cls = self.__class__
+		cls.current = self
+		cls.rules = dict(
+			size       = size,
+			mines      = mines,
+			flag_limit = flag_limit)
+		if not cls.player:
+			cls.player = Player()
+		if not cls.window:
+			cls.window = Window()
+		size, mines, _ = cls.rules.values()
+		self.new_field(size, mines)
+		self.window.render_field()
 
-		# start game!
-		self.field  = (size, mines)
-		self.player = Player(self)
-
-	"""
-	Properties
-	"""
-	@property
-	def field(self):
-		return self._field
-
-	# setters
-
-	@field.setter
-	def field(self, value):
-		print('Creating new minefield...')
-		dim, _mines = value
-		_field = [[Minefield(self, False) for _ in range(dim)] for _ in range(dim)]
-		for i in range(_mines):
-			x = r.randint(0, dim-1)
-			y = r.randint(0, dim-1)
-			_field[y][x] = Minefield(self, True)
-		print('Mines planted.')
-		self._field = _field
 
 	"""
 	Methods
 	"""
-	
+
+	def new_field(self, size, mines):
+		print('Creating new minefield...')
+		_field = [[Minefield() for _ in range(size)] for _ in range(size)]
+		for i in range(mines):
+			x = r.randint(0, size-1)
+			y = r.randint(0, size-1)
+			_field[y][x].ismine = True
+		print('Mines planted.')
+		self.__class__.field = _field
+
+	@classmethod
+	def end(cls, result=False):
+		print('Ending game...')
+		cls.window.playfield.destroy()
+
 
 	def download_scores(self):
 		file = None
@@ -79,17 +85,14 @@ class Game:
 		file = open("scores.json", 'w')
 		file.write(Encoder.encode(self.scores))
 
-
-
-class Player:
+class Player(Game):
 	"""
 	Handles Player data
 	"""
-	def __init__(self, Game, name="UNKNOWN"):
+	def __init__(self, name='UNKNOWN'):
 		print('Initializing Player: ' + name)
-		self._name = name 
-		self.flags = int( Game.rules['flag_limit'] )
-		self._inf_flags = Game.rules['flag_limit'] is (bool and True)
+		self._name = name
+		self._flags = int( super().current.rules['flag_limit'] )
 		self.mouse = Mouse()
 
 	"""
@@ -98,11 +101,19 @@ class Player:
 	@property
 	def name(self):
 		return self._name
+
+	@property
+	def flags(self):
+		return self._flags
 	# setters
  
 	@name.setter
 	def name(self, new_name):
 		self._name = new_name
+
+	@flags.setter
+	def flags(self, value):
+		self._flags = value
 
 	"""
 	Methods
@@ -118,7 +129,6 @@ class Mouse:
 
 		# to be needlessly elegant
 		def __init__(self, value):
-			print('Creating Mouse class...')
 			#assign a link for each value in mouse states
 			cls = self.__class__
 			if len(cls):
@@ -153,8 +163,7 @@ class Mouse:
 		self.state(self.state.next)
 		print("Mouse function is now " + self.state.name)
 
-
-class Minefield:
+class Minefield(Game):
 	"""
 	handles Minefields
 	"""
@@ -163,16 +172,15 @@ class Minefield:
 		dug     = 2
 		flagged = 3
 
-	def __init__(self, Game, ismine = False):
-		self._ismine = ismine             # is this Minefield a mine?
-		self._game = Game
+	def __init__(self, ismine = False):
+		self._ismine = ismine
 		self._state = self.states.fresh   # a new minefield shall always be fresh
 		self._x = 0
 		self._y = 0
-		self._button = Button(tk,
+		self._button = Button(Game.current.window.playfield,
 			padx=10,
 			pady=3)
-		self._button.configure(command=lambda: self.onclick(self._button))
+		self._button.configure(command=lambda: self.onclick())
 
 	"""
 	Properties
@@ -241,11 +249,11 @@ class Minefield:
 	"""
 	Methods
 	"""
-	def onclick(self, button):
+	def onclick(self):
 		# change the state of the minefield and update the button
-		mouse = self._game.player.mouse
+		mouse = super().current.player.mouse
 		if mouse.__class__ is not Mouse:
-			pass
+			return
 		match mouse.state.name:
 			case 'dig':
 				# the field is dug
@@ -253,6 +261,7 @@ class Minefield:
 
 					if self.ismine:
 						print('BOOM!')
+						super().current.window.alert()
 					else:
 						print('The player is safe... for now.')
 					self.bloom()
@@ -270,27 +279,27 @@ class Minefield:
 		# branch out and find mines
 		if self.state.value > 1:
 			return
-		gamefield = self._game.field
-		_max  = self._game.rules['size'] - 1
+		gamefield = Game.current.field
+		_max  = Game.current.rules['size'] - 1
 		x, y = self.cord
 		go = dict(
-			up        = lambda: gamefield[y - 1][x + 0] if y > 0 else None,
-			right     = lambda: gamefield[y + 0][x + 1] if x != _max else None, 
-			down      = lambda: gamefield[y + 1][x + 0] if y != _max else None,
-			left      = lambda: gamefield[y + 0][x - 1] if x > 0 else None,
+			up        = gamefield[y - 1][x + 0] if y > 0 else None,
+			right     = gamefield[y + 0][x + 1] if x != _max else None, 
+			down      = gamefield[y + 1][x + 0] if y != _max else None,
+			left      = gamefield[y + 0][x - 1] if x > 0 else None,
 
 			# used for check()
-			upright   = lambda: gamefield[y - 1][x + 1] if (y != 0 and x != _max) else None,
-			upleft    = lambda: gamefield[y - 1][x - 1] if (0 not in [x, y]) else None,
-			downright = lambda: gamefield[y + 1][x + 1] if (_max not in [x, y]) else None,
-			downleft  = lambda: gamefield[y + 1][x - 1] if (x != 0 and y != _max) else None)
+			upright   = gamefield[y - 1][x + 1] if (y != 0 and x != _max) else None,
+			upleft    = gamefield[y - 1][x - 1] if (0 not in [x, y]) else None,
+			downright = gamefield[y + 1][x + 1] if (_max not in [x, y]) else None,
+			downleft  = gamefield[y + 1][x - 1] if (x != 0 and y != _max) else None)
 		def check():
 			# check how many mines are nearby
 			_found = []
-			for i, f in list(go.items()):
+			for i, m in list(go.items()):
 				try:
-					if f().state.value <= 1:
-						if f().ismine:
+					if m.state.value <= 1:
+						if m.ismine:
 							_found.append(i)
 				except:
 					continue
@@ -304,26 +313,24 @@ class Minefield:
 			self.state = 'dug'
 			return
 		self.state = 'dug'
-		for direction, f in list(go.items()):
-			if f() == None:
+		for direction, m in list(go.items()):
+			if m == None:
 				continue
-			f().bloom()
+			m.bloom()
 
-
-
-
-class Window:
+class Window(Game):
 	"""
 	handles most of the rendering side of things
 	"""
-	def __init__(self, Game):
-		self._game = Game
-		self.render_field()
+	def __init__(self):
+		self.playfield = Frame(tk)
+		self.playfield.pack()
 
 
 	def render_field(self):
 		print('rendering buttons')
-		_field = self._game.field
+		_field = super().current.field
+		print(type(_field))
 		field_list_simple = list()
 		for y, field_list in enumerate(_field):
 			for x, field_obj in enumerate(field_list):
@@ -332,6 +339,16 @@ class Window:
 				#field_obj.button['text'] = f'{x}, {y}' # debug
 		return field_list_simple
 
-Window(Game())
+	def alert(self, win=False):
+		alert = Toplevel(tk)
+		info = Label(alert)
+		if win:
+			info['text'] = 'You win!'
+		else:
+			info['text'] = "Game over."
+		alert_close = Button(alert, text='OK', command=lambda: alert.destroy())
+		info.pack()
+		alert_close.pack()
 
+new =Game()
 tk.mainloop()
