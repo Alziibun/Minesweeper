@@ -27,7 +27,7 @@ class Game:
 		size       = 10,
 		mines      = 10,
 		flag_limit = 0)
-	def __init__(self, size=20, mines=60, flag_limit = 0):
+	def __init__(self, size=15, mines=60, flag_limit = 0):
 		print('Initializing new Game.')
 		cls = self.__class__
 		cls.current = self
@@ -269,6 +269,7 @@ class Minefield(Game):
 					if self.ismine:
 						print('BOOM!')
 						super().current.window.alert()
+						Game.current.end()
 					else:
 						print('The player is safe... for now.')
 					self.bloom()
