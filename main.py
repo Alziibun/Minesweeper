@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import ttk
+import tkinter.font as font
 
 tk = Tk()
 
@@ -178,9 +179,13 @@ class Minefield(Game):
 		self._state = self.states.fresh   # a new minefield shall always be fresh
 		self._x = 0
 		self._y = 0
+		buttonfont = font.Font(weight='bold')
 		self._button = Button(Game.current.window.playfield,
 			height=1,
-			width=2)
+			width=2,
+			font=buttonfont,
+			padx=-1,
+			pady=-1)
 		self._button.configure(command=lambda: self.onclick())
 
 	"""
@@ -228,6 +233,7 @@ class Minefield(Game):
 				match s:
 					case 'dug':
 						button['relief'] = SUNKEN
+						button['bg'] = 'light grey'
 					case 'flagged':
 						button['text'] = 'P'
 				print(f'The Minefield at ({self.x}, {self.y}) has been {s}.')
@@ -311,6 +317,11 @@ class Minefield(Game):
 			return
 		if len(checklist) > 0:
 			self.button['text'] = str(len(checklist))
+			match len(checklist):
+				case 1: self.button['fg'] = 'blue'
+				case 2: self.button['fg'] = 'green'
+				case 3: self.button['fg'] = 'red'
+				case 4: self.button['fg'] = 'orange'
 			self.state = 'dug'
 			return
 		self.state = 'dug'
@@ -324,7 +335,8 @@ class Window(Game):
 	handles most of the rendering side of things
 	"""
 	def __init__(self):
-		self.playfield = Frame(tk)
+		self.playfield = Frame(tk,
+			background='grey')
 		self._title = Label(tk, text='bottom text')
 
 		# packing
