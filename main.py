@@ -41,6 +41,7 @@ class Game:
 		size, mines, _ = cls.rules.values()
 		self.new_field(size, mines)
 		self.window.render_field()
+		self.window.title = f'Grid Size : {size} | Mines : {mines}'
 
 
 	"""
@@ -324,9 +325,22 @@ class Window(Game):
 	"""
 	def __init__(self):
 		self.playfield = Frame(tk)
+		self._title = Label(tk, text='bottom text')
+
+		# packing
+		self._title.pack()
 		self.playfield.pack()
 
 
+	@property
+	def title(self):
+		return self._title
+
+
+	@title.setter
+	def title(self, value):
+		self._title['text'] = value
+	
 	def render_field(self):
 		print('rendering buttons')
 		_field = super().current.field
@@ -351,4 +365,5 @@ class Window(Game):
 		alert_close.pack()
 
 new =Game()
+tk.title("Minesweeper by Alzii!")
 tk.mainloop()
