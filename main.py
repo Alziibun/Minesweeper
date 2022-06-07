@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk
 import tkinter.font as font
+import time
 
 tk = Tk()
 
@@ -27,6 +28,7 @@ class Game:
 		size       = 10,
 		mines      = 10,
 		flag_limit = 0)
+	new_game = True
 	def __init__(self, size=15, mines=60, flag_limit = 0):
 		print('Initializing new Game.')
 		cls = self.__class__
@@ -39,8 +41,9 @@ class Game:
 			cls.player = Player()
 		if not cls.window:
 			cls.window = Window()
-		size, mines, _ = cls.rules.values()
-		self.new_field(size, mines)
+		size, _,_ = cls.rules.values()
+		cls.new_game = True
+		self.new_field(size)
 		self.window.render_field()
 		self.window.title = f'Grid Size : {size} | Mines : {mines}'
 
@@ -49,20 +52,32 @@ class Game:
 	Methods
 	"""
 
-	def new_field(self, size, mines):
+	def new_field(self, size):
 		print('Creating new minefield...')
 		_field = [[Minefield() for _ in range(size)] for _ in range(size)]
+		self.__class__.field = _field
+
+	def set_mines(self, selcord):
+		print(f'Planting mines with the exception of {selcord}.')
+		cls = self.__class__
+		mines = cls.rules['mines']
+		size = cls.rules['size']
 		for i in range(mines):
 			x = r.randint(0, size-1)
 			y = r.randint(0, size-1)
-			_field[y][x].ismine = True
+			if (x, y) == selcord:
+				continue
+			cls.field[y][x].ismine = True
+		cls.new_game = False
 		print('Mines planted.')
-		self.__class__.field = _field
+
 
 	@classmethod
 	def end(cls, result=False):
 		print('Ending game...')
 		cls.window.playfield.destroy()
+		#time.sleep(4.5)
+		#tk.destroy()
 
 
 	def download_scores(self):
@@ -264,6 +279,8 @@ class Minefield(Game):
 		match mouse.state.name:
 			case 'dig':
 				# the field is dug
+				if Game.new_game:
+					Game.current.set_mines(self.cord)
 				if self.state.value < 2:
 
 					if self.ismine:
