@@ -169,29 +169,39 @@ class Mouse:
 
 	@state.setter
 	def state(self, s):
-		if s > 1:
-			raise ValueError("Mouse state cannot be higher than 1.")
-		self._state = s
+		try:
+			self._state = Mouse.States(s)
+		except:
+			raise ValueError("Invalid Mouse state.")
 
 	"""
 	Methods
 	"""
 	def switch(self):
-		self.state(self.state.next)
+		self.state = self.state.next
 		print("Mouse function is now " + self.state.name)
 
 class Minefield(Game):
 	"""
 	handles Minefields
 	"""
-	class states(Enum):
-		fresh   = 1
-		dug     = 2
-		flagged = 3
+	class States(Enum):
+		def __new__(cls, *args, **kwargs):
+			value = len(cls.__members__) + 1
+			obj = object.__new__(cls)
+			obj._value_ = value
+			return obj
+		def __init__(self, bRelief):
+			self.style = dict(
+				relief = bRelief)
+
+		FRESH = RAISED
+		DUG   = GROOVE
+		FLAG  = RAISED
 
 	def __init__(self, ismine = False):
 		self._ismine = ismine
-		self._state = self.states.fresh   # a new minefield shall always be fresh
+		self._state = self.States(1)  # a new minefield shall always be fresh
 		self._x = 0
 		self._y = 0
 		buttonfont = font.Font(weight='bold')
@@ -241,20 +251,16 @@ class Minefield(Game):
 	@state.setter
 	def state(self, s):
 		try:
-			if type(s) is not str:
-				s = s.name
-			if s in self.states.__members__:
-				button = self._button
-				match s:
-					case 'dug':
-						button['relief'] = SUNKEN
-						button['bg'] = 'light grey'
-					case 'flagged':
-						button['text'] = 'P'
-				print(f'The Minefield at ({self.x}, {self.y}) has been {s}.')
-				self._state = self.states[s]
+			if type(s) is int:
+				self._state = Minefield.States(s)
+			elif type(s) is str:
+				for index in Minefield.States:
+					if s.lower() == index.name.lower():
+						self._state = index
+						break
+			self.stylize()
 		except:
-			raise ValueError("Invalid Minefield state.")
+			raise ValueError(f"'{s}' is not a valid Minefield state.")
 
 	@x.setter
 	def x(self, value):
@@ -271,18 +277,26 @@ class Minefield(Game):
 	"""
 	Methods
 	"""
+	def stylize(self):
+		# changes the button style to match the current state
+		print(f'Updating button style to match {self.state.name}...')
+		ref = self.state
+		for index in ['relief']:
+			print(f'| - Changing button {index}...')
+			self.button[index] = ref.style[index]
+		print('Finished styling button.')
+
 	def onclick(self):
 		# change the state of the minefield and update the button
 		mouse = super().current.player.mouse
 		if mouse.__class__ is not Mouse:
 			return
-		match mouse.state.name:
-			case 'dig':
+		match mouse.state.value:
+			case 1:
 				# the field is dug
 				if Game.new_game:
 					Game.current.set_mines(self.cord)
 				if self.state.value < 2:
-
 					if self.ismine:
 						print('BOOM!')
 						super().current.window.alert()
@@ -292,7 +306,7 @@ class Minefield(Game):
 					self.bloom()
 				else:
 					print('The Player cannot dig here.')
-			case 'flag':
+			case 2:
 				# the field is flagged
 				if self.state.value > 1:
 					# check if the field is fresh or flagged
@@ -342,7 +356,7 @@ class Minefield(Game):
 				case 4: self.button['fg'] = 'orange'
 			self.state = 'dug'
 			return
-		self.state = 'dug'
+		self.state = 2
 		for direction, m in list(go.items()):
 			if m == None:
 				continue
