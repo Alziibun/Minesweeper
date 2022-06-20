@@ -374,7 +374,7 @@ class Window(Game):
 	###########
 	# Methods #
 	###########
-	
+
 	def render_field(self):
 		# Sends a list of Tk Button objects.  Usually for rendering.
 		print('rendering buttons')
