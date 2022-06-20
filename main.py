@@ -371,7 +371,12 @@ class Window(Game):
 	def title(self, value):
 		self._title['text'] = value
 	
+	###########
+	# Methods #
+	###########
+	
 	def render_field(self):
+		# Sends a list of Tk Button objects.  Usually for rendering.
 		print('rendering buttons')
 		_field = super().current.field
 		print(type(_field))
@@ -384,6 +389,7 @@ class Window(Game):
 		return field_list_simple
 
 	def alert(self, win=False):
+		# Send an alert to the player
 		alert = Toplevel(tk)
 		info = Label(alert)
 		if win:
