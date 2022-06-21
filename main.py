@@ -30,7 +30,9 @@ class Game:
 		flag_limit = 0)
 	new_game = True
 	def __init__(self, size=15, mines=45, flag_limit = 0):
-		print('Initializing new Game.')
+		print(f'========= MINESWEEPER ==========')
+		print(f'| Grid: {size}x{size}  || Mines: {mines} |')
+		print(f'=========== NEW GAME ==========')
 		cls = self.__class__
 		cls.current = self
 		cls.rules = dict(
@@ -45,7 +47,7 @@ class Game:
 		cls.new_game = True
 		self.new_field(size)
 		self.window.render_field()
-		self.window.title = f'Grid Size : {size} | Mines : {mines}'
+		Window.setTitlebar(f'Grid Size : {size} | Mines : {mines}')
 
 
 	"""
@@ -138,8 +140,9 @@ class Mouse:
 	handles Mouse information
 	"""
 	class States(Enum):
-		dig  = 1
-		flag = 2
+		dig   = 1
+		flag  = 2
+		query = 3
 
 		# to be needlessly elegant
 		def __init__(self, value):
@@ -153,6 +156,7 @@ class Mouse:
 				self.next = first
 
 	def __init__(self):
+		print('|-- Initializing Mouse.')
 		self._state = self.States(1) # set mouse to default operation
 
 	"""
@@ -168,15 +172,16 @@ class Mouse:
 	def state(self, s):
 		try:
 			self._state = Mouse.States(s)
-		except:
-			raise ValueError("Invalid Mouse state.")
-
+			Window.mouseFunc['text'] = self.state.name
+		except Exception as e:
+			print(e)
 	"""
 	Methods
 	"""
-	def switch(self):
+	def switch(self, *args):
 		self.state = self.state.next
 		print("Mouse function is now " + self.state.name)
+		return self.state # for the sake of match ... case statements
 
 class Minefield(Game):
 	"""
@@ -188,14 +193,25 @@ class Minefield(Game):
 			obj = object.__new__(cls)
 			obj._value_ = value
 			return obj
-		def __init__(self, bRelief, bgColor):
+		def __init__(self, bRelief, bgColor, text, state):
 			self.style = dict(
 				relief = bRelief,
-				bg = bgColor)
+				bg = bgColor or 'SystemButtonFace',
+				text = text or '',
+				state = state)
+			cls = self.__class__
+			if len(cls):
+				all = list(cls)
+				first, prev = all[0], all[-1]
+				prev.next = self
+				self.prev = prev
+				self.next = first
 
-		FRESH = GROOVE, 'SystemButtonFace'
-		DUG   = SUNKEN, 'light grey'
-		FLAG  = GROOVE, 'red'
+			#   Relief  | button color | Text | State
+		FRESH = GROOVE,  None,          None,  NORMAL
+		DUG   = SUNKEN,  'light grey',  None,  NORMAL
+		QUERY = GROOVE,  None,          '?',   NORMAL
+		FLAG  = GROOVE,  None,          'X',   DISABLED
 
 	def __init__(self, ismine = False):
 		self._ismine = ismine
@@ -211,6 +227,7 @@ class Minefield(Game):
 			pady=-1)
 		self._button.configure(command=lambda: self.onclick())
 		self.stylize()
+		self._button.bind('<Button-3>', lambda x: self.onRightClick())
 
 	"""
 	Properties
@@ -257,6 +274,10 @@ class Minefield(Game):
 					if s.lower() == index.name.lower():
 						self._state = index
 						break
+			elif type(s) is self.States:
+				self._state = s
+			else:
+				print('State not found.')
 			self.stylize()
 		except:
 			raise ValueError(f"'{s}' is not a valid Minefield state.")
@@ -280,7 +301,7 @@ class Minefield(Game):
 		# changes the button style to match the current state
 		print(f'Updating button style to match {self.state.name}...')
 		ref = self.state
-		for index in ['relief', 'bg']:
+		for index in ['relief', 'bg', 'text', 'state']:
 			print(f'| - Changing button {index}...')
 			self.button[index] = ref.style[index]
 		print('Finished styling button.')
@@ -290,32 +311,32 @@ class Minefield(Game):
 		mouse = super().current.player.mouse
 		if mouse.__class__ is not Mouse:
 			return
-		match mouse.state.value:
-			case 1:
-				# the field is dug
-				if Game.new_game:
-					Game.current.set_mines(self.cord)
-				if self.state.value < 2:
-					if self.ismine:
-						print('BOOM!')
-						super().current.window.alert()
-						Game.current.end()
-					else:
-						print('The player is safe... for now.')
-					self.bloom()
-				else:
-					print('The Player cannot dig here.')
-			case 2:
-				# the field is flagged
-				if self.state.value > 1:
-					# check if the field is fresh or flagged
-					print("The Player cannot place a flag here.")
-				else:
-					self.state = 'flagged'
+		if Game.new_game:
+			Game.current.set_mines(self.cord)
+		if self.state.value < 2 or self.state is self.States.QUERY:
+			if self.ismine:
+				print('BOOM!')
+				super().current.window.alert()
+				Game.current.end()
+			else:
+				print('The player is safe... for now.')
+				self.state = 'fresh'
+			self.bloom()
+		else:
+			print('The Player cannot dig here.')
+
+	def onRightClick(self):
+		# cycle through field states
+		if self.state is self.States.DUG:
+			return
+		# Simply put: skip over the dug state if it's next
+		_next = self.state.next if self.state.next is not self.States.DUG else self.state.next.next
+		print(f'Changing field state to {_next.name.lower()}.')
+		self.state = _next
 
 	def bloom(self):
 		# branch out and find mines
-		if self.state.value > 1:
+		if self.state.value > 1 and self.state is not self.States.QUERY:
 			return
 		gamefield = Game.current.field
 		_max  = Game.current.rules['size'] - 1
@@ -347,6 +368,7 @@ class Minefield(Game):
 		if self.ismine:
 			return
 		if len(checklist) > 0:
+			self.state = 'dug'
 			self.button['text'] = str(len(checklist))
 			match len(checklist):
 				case 1: self.button['fg'] = 'blue'
@@ -354,7 +376,6 @@ class Minefield(Game):
 				case 3: self.button['fg'] = 'red'
 				case 4: self.button['fg'] = 'violet red'
 				case 5: self.button['fg'] = 'purple1'
-			self.state = 'dug'
 			return
 		self.state = 2
 		for direction, m in list(go.items()):
@@ -366,40 +387,38 @@ class Window(Game):
 	"""
 	handles most of the rendering side of things
 	"""
+	playfield = None
+	title     = None
+	newGame   = None
 	def __init__(self):
 		print('Making a new window')
-		self.playfield = Frame(tk)
-		self._title = Label(tk, text='bottom text')
-		self._NG = Button(tk, text='new game', command=Game)
+		cls = self.__class__
+		cls.playfield = Frame(tk)
+		cls.title = Label(tk, text='bottom text')
+		cls.newGame = Button(tk, text='new game', command=Game)
 		# packing
-		self._NG.pack()
-		self._title.pack()
+		self.newGame.pack()
+		self.title.pack()
 		self.playfield.pack()
-
-
-	@property
-	def title(self):
-		return self._title
-
-
-	@title.setter
-	def title(self, value):
-		self._title['text'] = value
 	
 	###########
 	# Methods #
 	###########
-	def clear_field(self):
+	@classmethod
+	def setTitlebar(cls, text):
+		if cls.title:
+			cls.title['text'] = text
+	@classmethod
+	def clear_field(cls):
 		print('Clearing field...')
-		for child in self.playfield.winfo_children():
+		for child in cls.playfield.winfo_children():
 			child.destroy()
 		print('Field cleared.')
-
 
 	def render_field(self):
 		# Sends a list of Tk Button objects.  Usually for rendering.
 		print('Rendering buttons...')
-		_field = super().current.field
+		_field = Game.current.field
 		field_list_simple = list()
 		for y, field_list in enumerate(_field):
 			for x, field_obj in enumerate(field_list):
