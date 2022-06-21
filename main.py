@@ -29,7 +29,7 @@ class Game:
 		mines      = 10,
 		flag_limit = 0)
 	new_game = True
-	def __init__(self, size=15, mines=60, flag_limit = 0):
+	def __init__(self, size=15, mines=45, flag_limit = 0):
 		print('Initializing new Game.')
 		cls = self.__class__
 		cls.current = self
@@ -75,10 +75,7 @@ class Game:
 	@classmethod
 	def end(cls, result=False):
 		print('Ending game...')
-		cls.window.playfield.destroy()
-		#time.sleep(4.5)
-		#tk.destroy()
-
+		cls.window.clear_field()
 
 	def download_scores(self):
 		file = None
@@ -191,13 +188,14 @@ class Minefield(Game):
 			obj = object.__new__(cls)
 			obj._value_ = value
 			return obj
-		def __init__(self, bRelief):
+		def __init__(self, bRelief, bgColor):
 			self.style = dict(
-				relief = bRelief)
+				relief = bRelief,
+				bg = bgColor)
 
-		FRESH = RAISED
-		DUG   = GROOVE
-		FLAG  = RAISED
+		FRESH = GROOVE, 'SystemButtonFace'
+		DUG   = SUNKEN, 'light grey'
+		FLAG  = GROOVE, 'red'
 
 	def __init__(self, ismine = False):
 		self._ismine = ismine
@@ -212,6 +210,7 @@ class Minefield(Game):
 			padx=-1,
 			pady=-1)
 		self._button.configure(command=lambda: self.onclick())
+		self.stylize()
 
 	"""
 	Properties
@@ -281,7 +280,7 @@ class Minefield(Game):
 		# changes the button style to match the current state
 		print(f'Updating button style to match {self.state.name}...')
 		ref = self.state
-		for index in ['relief']:
+		for index in ['relief', 'bg']:
 			print(f'| - Changing button {index}...')
 			self.button[index] = ref.style[index]
 		print('Finished styling button.')
@@ -353,7 +352,8 @@ class Minefield(Game):
 				case 1: self.button['fg'] = 'blue'
 				case 2: self.button['fg'] = 'green'
 				case 3: self.button['fg'] = 'red'
-				case 4: self.button['fg'] = 'orange'
+				case 4: self.button['fg'] = 'violet red'
+				case 5: self.button['fg'] = 'purple1'
 			self.state = 'dug'
 			return
 		self.state = 2
@@ -367,11 +367,12 @@ class Window(Game):
 	handles most of the rendering side of things
 	"""
 	def __init__(self):
-		self.playfield = Frame(tk,
-			background='grey')
+		print('Making a new window')
+		self.playfield = Frame(tk)
 		self._title = Label(tk, text='bottom text')
-
+		self._NG = Button(tk, text='new game', command=Game)
 		# packing
+		self._NG.pack()
 		self._title.pack()
 		self.playfield.pack()
 
@@ -388,12 +389,17 @@ class Window(Game):
 	###########
 	# Methods #
 	###########
+	def clear_field(self):
+		print('Clearing field...')
+		for child in self.playfield.winfo_children():
+			child.destroy()
+		print('Field cleared.')
+
 
 	def render_field(self):
 		# Sends a list of Tk Button objects.  Usually for rendering.
-		print('rendering buttons')
+		print('Rendering buttons...')
 		_field = super().current.field
-		print(type(_field))
 		field_list_simple = list()
 		for y, field_list in enumerate(_field):
 			for x, field_obj in enumerate(field_list):
