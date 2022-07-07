@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import ttk
 import tkinter.font as font
 import time
+import os
 
 tk = Tk()
 
@@ -29,7 +30,8 @@ class Game:
 		mines      = 10,
 		flag_limit = 0)
 	new_game = True
-	def __init__(self, size=15, mines=45, flag_limit = 0):
+	scores = None
+	def __init__(self, size=16, mines=40, flag_limit = 0):
 		print(f'========= MINESWEEPER ==========')
 		print(f'| Grid: {size}x{size}  || Mines: {mines} |')
 		print(f'=========== NEW GAME ==========')
@@ -47,6 +49,7 @@ class Game:
 		cls.new_game = True
 		self.new_field(size)
 		self.window.render_field()
+		self.load_scores()
 		Window.setTitlebar(f'Grid Size : {size} | Mines : {mines}')
 
 
@@ -54,14 +57,14 @@ class Game:
 	Methods
 	"""
 
-	def new_field(self, size):
+	@classmethod
+	def new_field(cls, size):
 		print('Creating new minefield...')
-		_field = [[Minefield() for _ in range(size)] for _ in range(size)]
-		self.__class__.field = _field
+		cls.field = [[Minefield() for _ in range(size)] for _ in range(size)]
 
-	def set_mines(self, selcord):
+	@classmethod
+	def set_mines(cls, selcord):
 		print(f'Planting mines with the exception of {selcord}.')
-		cls = self.__class__
 		mines = cls.rules['mines']
 		size = cls.rules['size']
 		for i in range(mines):
@@ -73,33 +76,30 @@ class Game:
 		cls.new_game = False
 		print('Mines planted.')
 
-
 	@classmethod
 	def end(cls, result=False):
 		print('Ending game...')
-		cls.window.clear_field()
+		cls.reveal_mines()
+		tk.after(3000, lambda: cls.window.menu_main())
 
-	def download_scores(self):
-		file = None
-		try:
-			file = open("scores.json", 'r')
-		except:
-			print('Creating a new scores file...')
-			file = open("scores.json", 'w')
-			file.write(dict())
-			file.close()
-			file = open('scores.json', 'r')
-		finally:
-			try:
-				obj, idx = Decoder.raw_decode(file)
-				yield obj
-			except TypeError as e:
-				print(e)
-				pass
+	@classmethod
+	def load_scores(cls):
+		with open("scores.json", "a+") as file:
+			file.seek(0)
+			try:     cls.scores = json.load(file)
+			except:  cls.scores = json.loads('{}')
 
-	def upload_scores(self):
-		file = open("scores.json", 'w')
-		file.write(Encoder.encode(self.scores))
+	@classmethod
+	def write_scores(cls):
+		with open("scores.json", 'w') as file:
+			file.write(cls.scores)
+
+	@classmethod
+	def reveal_mines(cls):
+		for fieldlist in cls.field:
+			for field in fieldlist:
+				if field.ismine:
+					field.state = 'mine'
 
 class Player(Game):
 	"""
@@ -212,6 +212,7 @@ class Minefield(Game):
 		DUG   = SUNKEN,  'light grey',  None,  NORMAL
 		QUERY = GROOVE,  None,          '?',   NORMAL
 		FLAG  = GROOVE,  None,          'X',   DISABLED
+		MINE  = GROOVE,  'red',         'M',   DISABLED
 
 	def __init__(self, ismine = False):
 		self._ismine = ismine
@@ -223,8 +224,8 @@ class Minefield(Game):
 			height=1,
 			width=2,
 			font=buttonfont,
-			padx=-1,
-			pady=-1)
+			padx=-3,
+			pady=-3)
 		self._button.configure(command=lambda: self.onclick())
 		self.stylize()
 		self._button.bind('<Button-3>', lambda x: self.onRightClick())
@@ -316,7 +317,6 @@ class Minefield(Game):
 		if self.state.value < 2 or self.state is self.States.QUERY:
 			if self.ismine:
 				print('BOOM!')
-				super().current.window.alert()
 				Game.current.end()
 			else:
 				print('The player is safe... for now.')
@@ -373,9 +373,9 @@ class Minefield(Game):
 			match len(checklist):
 				case 1: self.button['fg'] = 'blue'
 				case 2: self.button['fg'] = 'green'
-				case 3: self.button['fg'] = 'red'
+				case 3: self.button['fg'] = 'goldenrod'
 				case 4: self.button['fg'] = 'violet red'
-				case 5: self.button['fg'] = 'purple1'
+				case _: self.button['fg'] = 'red'
 			return
 		self.state = 2
 		for direction, m in list(go.items()):
@@ -389,17 +389,15 @@ class Window(Game):
 	"""
 	playfield = None
 	title     = None
-	newGame   = None
 	def __init__(self):
 		print('Making a new window')
 		cls = self.__class__
+		tk.resizable(False, False)
 		cls.playfield = Frame(tk)
 		cls.title = Label(tk, text='bottom text')
-		cls.newGame = Button(tk, text='new game', command=Game)
 		# packing
-		self.newGame.pack()
 		self.title.pack()
-		self.playfield.pack()
+		self.playfield.pack(padx=10, pady=10)
 	
 	###########
 	# Methods #
@@ -415,6 +413,17 @@ class Window(Game):
 			child.destroy()
 		print('Field cleared.')
 
+	@classmethod
+	def menu_main(cls):
+		if cls.playfield:
+			cls.clear_field()
+			menu_frame = Frame(cls.playfield, relief=RAISED)
+			menu_frame.place(relx=0.5, rely=0.5, anchor=CENTER)
+			menu_title = Label(menu_frame, text='Start new game?')
+			menu_start = Button(menu_frame, text='New Game', command=Game)
+			menu_title.pack()
+			menu_start.pack()
+
 	def render_field(self):
 		# Sends a list of Tk Button objects.  Usually for rendering.
 		print('Rendering buttons...')
@@ -426,18 +435,6 @@ class Window(Game):
 				field_obj.cord = (x, y)
 				#field_obj.button['text'] = f'{x}, {y}' # debug
 		return field_list_simple
-
-	def alert(self, win=False):
-		# Send an alert to the player
-		alert = Toplevel(tk)
-		info = Label(alert)
-		if win:
-			info['text'] = 'You win!'
-		else:
-			info['text'] = "Game over."
-		alert_close = Button(alert, text='OK', command=lambda: alert.destroy())
-		info.pack()
-		alert_close.pack()
 
 new =Game()
 tk.title("Minesweeper by Alzii!")
