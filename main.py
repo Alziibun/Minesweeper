@@ -137,7 +137,6 @@ class Player(Game):
 		print('Initializing Player: ' + name)
 		self._name = name
 		self._flags = int( super().current.rules['flag_limit'] )
-		self.mouse = Mouse()
 
 	"""
 	Properties
@@ -290,9 +289,6 @@ class Minefield(Game):
 
 	def onclick(self):
 		# change the state of the minefield and update the button
-		mouse = super().current.player.mouse
-		if mouse.__class__ is not Mouse:
-			return
 		if Game.new_game:
 			Game.set_mines(self.cord)
 		if self.state.value < 2 or self.state is self.States.QUERY:
