@@ -163,53 +163,6 @@ class Player(Game):
 	Methods
 	"""
 
-class Mouse:
-	"""
-	handles Mouse information
-	"""
-	class States(Enum):
-		dig   = 1
-		flag  = 2
-		query = 3
-
-		# to be needlessly elegant
-		def __init__(self, value):
-			#assign a link for each value in mouse states
-			cls = self.__class__
-			if len(cls):
-				all = list(cls)
-				first, prev = all[0], all[-1]
-				prev.next = self #the next of the previous is itself
-				self.prev = prev
-				self.next = first
-
-	def __init__(self):
-		print('|-- Initializing Mouse.')
-		self._state = self.States(1) # set mouse to default operation
-
-	"""
-	Properties
-	"""
-	@property
-	def state(self):
-		return self._state
-
-    #  setters
-
-	@state.setter
-	def state(self, s):
-		try:
-			self._state = Mouse.States(s)
-			Window.mouseFunc['text'] = self.state.name
-		except Exception as e:
-			print(e)
-	"""
-	Methods
-	"""
-	def switch(self, *args):
-		self.state = self.state.next
-		print("Mouse function is now " + self.state.name)
-		return self.state # for the sake of match ... case statements
 
 class Minefield(Game):
 	"""
