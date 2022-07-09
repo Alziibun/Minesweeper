@@ -1,7 +1,7 @@
 from tkinter import *
 from tkinter import ttk
 import tkinter.font as font
-import time
+import datetime as time
 import os
 
 tk = Tk()
@@ -31,6 +31,8 @@ class Game:
 		flag_limit = 0)
 	new_game = True
 	scores = None
+	start_time  = 0
+	finish_time = 0
 	def __init__(self, size=16, mines=40, flag_limit = 0):
 		print(f'========= MINESWEEPER ==========')
 		print(f'| Grid: {size}x{size}  || Mines: {mines} |')
@@ -58,6 +60,12 @@ class Game:
 	"""
 
 	@classmethod
+	@property
+	def score(cls):
+		delta = cls.finish_time - cls.start_time
+		return delta
+
+	@classmethod
 	def new_field(cls, size):
 		print('Creating new minefield...')
 		cls.field = [[Minefield() for _ in range(size)] for _ in range(size)]
@@ -75,12 +83,18 @@ class Game:
 			cls.field[y][x].ismine = True
 		cls.new_game = False
 		print('Mines planted.')
+		cls.start_time = time.datetime.now()
+		print('Time is now being recorded.')
 
 	@classmethod
-	def end(cls, result=False):
-		print('Ending game...')
-		cls.reveal_mines()
-		tk.after(3000, lambda: cls.window.menu_main())
+	def end(cls, win=False):
+		if win:
+			cls.finish_time = time.datetime.now()
+
+		else:
+			print('Ending game...')
+			cls.reveal_mines()
+			tk.after(3000, lambda: cls.window.menu_main())
 
 	@classmethod
 	def load_scores(cls):
@@ -100,6 +114,20 @@ class Game:
 			for field in fieldlist:
 				if field.ismine:
 					field.state = 'mine'
+
+	@classmethod
+	def validate_flags(cls):
+		mine_chk = cls.rules['mines']
+		for fieldlist in cls.field:
+			if mine_chk == 0:
+				break
+			for field in fieldlist:
+				if mine_chk == 0:
+					break
+				if field.ismine and field.state.name is Minefield.States.FLAG:
+					mine_chk -= 1
+
+
 
 class Player(Game):
 	"""
@@ -220,7 +248,7 @@ class Minefield(Game):
 		self._x = 0
 		self._y = 0
 		buttonfont = font.Font(weight='bold')
-		self._button = Button(Game.current.window.playfield,
+		self._button = Button(Window.playfield,
 			height=1,
 			width=2,
 			font=buttonfont,
@@ -300,12 +328,12 @@ class Minefield(Game):
 	"""
 	def stylize(self):
 		# changes the button style to match the current state
-		print(f'Updating button style to match {self.state.name}...')
+		#print(f'Updating button style to match {self.state.name}...')
 		ref = self.state
 		for index in ['relief', 'bg', 'text', 'state']:
-			print(f'| - Changing button {index}...')
+			#print(f'| - Changing button {index}...')
 			self.button[index] = ref.style[index]
-		print('Finished styling button.')
+		#print('Finished styling button.')
 
 	def onclick(self):
 		# change the state of the minefield and update the button
@@ -313,11 +341,11 @@ class Minefield(Game):
 		if mouse.__class__ is not Mouse:
 			return
 		if Game.new_game:
-			Game.current.set_mines(self.cord)
+			Game.set_mines(self.cord)
 		if self.state.value < 2 or self.state is self.States.QUERY:
 			if self.ismine:
 				print('BOOM!')
-				Game.current.end()
+				Game.end()
 			else:
 				print('The player is safe... for now.')
 				self.state = 'fresh'
@@ -338,8 +366,8 @@ class Minefield(Game):
 		# branch out and find mines
 		if self.state.value > 1 and self.state is not self.States.QUERY:
 			return
-		gamefield = Game.current.field
-		_max  = Game.current.rules['size'] - 1
+		gamefield = Game.field
+		_max  = Game.rules['size'] - 1
 		x, y = self.cord
 		go = dict(
 			up        = gamefield[y - 1][x + 0] if y > 0 else None,
@@ -357,9 +385,8 @@ class Minefield(Game):
 			_found = []
 			for i, m in list(go.items()):
 				try:
-					if m.state.value <= 1:
-						if m.ismine:
-							_found.append(i)
+					if m.ismine:
+						_found.append(i)
 				except:
 					continue
 			return _found
@@ -427,7 +454,7 @@ class Window(Game):
 	def render_field(self):
 		# Sends a list of Tk Button objects.  Usually for rendering.
 		print('Rendering buttons...')
-		_field = Game.current.field
+		_field = Game.field
 		field_list_simple = list()
 		for y, field_list in enumerate(_field):
 			for x, field_obj in enumerate(field_list):
