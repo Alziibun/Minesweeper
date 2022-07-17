@@ -139,7 +139,7 @@ class Player:
 	def __init__(self, name='UNKNOWN'):
 		print('Initializing Player: ' + name)
 		self._name = name
-		self._flags = int( super().current.rules['flag_limit'] )
+		self._flags = int( Game.rules['flag_limit'] )
 
 	"""
 	Properties
