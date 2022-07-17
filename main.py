@@ -35,6 +35,7 @@ class Game:
 	scores = None
 	start_time  = 0
 	finish_time = 0
+	field_remain = 0
 	def __init__(self, size=16, mines=40, flag_limit = 0):
 		print(f'========= MINESWEEPER ==========')
 		print(f'| Grid: {size}x{size}  || Mines: {mines} |')
@@ -72,6 +73,7 @@ class Game:
 	def new_field(cls, size):
 		print('Creating new minefield...')
 		cls.field = [[Minefield() for _ in range(size)] for _ in range(size)]
+		cls.field_remain = size ** 2
 
 	@classmethod
 	def set_mines(cls, selcord):
@@ -122,15 +124,14 @@ class Game:
 	@classmethod
 	def validate_flags(cls):
 		mine_chk = cls.rules['mines']
+	def check_remaining(cls):
+		# checks the number of fresh fields
+		square = cls.rules['size'] ** 2
 		for fieldlist in cls.field:
-			if mine_chk == 0:
-				break
 			for field in fieldlist:
-				if mine_chk == 0:
-					break
-				if field.ismine and field.state.name is Minefield.States.FLAG:
-					mine_chk -= 1
-
+				if field.state.value > 1:
+					square -= 1
+		return not bool(square)
 
 
 class Player:
