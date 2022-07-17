@@ -51,9 +51,9 @@ class Game:
 			cls.window = Window()
 		size, _,_ = cls.rules.values()
 		cls.new_game = True
-		self.new_field(size)
-		self.window.render_field()
-		self.load_scores()
+		cls.new_field(size)
+		cls.window.render_field()
+		cls.scores = scores or cls.load_scores()
 		Window.setTitlebar(f'Grid Size : {size} | Mines : {mines}')
 
 
@@ -90,6 +90,7 @@ class Game:
 
 	@classmethod
 	def end(cls, win=False):
+		cls.end_game = False
 		if win:
 			cls.finish_time = time.datetime.now()
 
@@ -291,6 +292,8 @@ class Minefield:
 
 	def onclick(self):
 		# change the state of the minefield and update the button
+		if Game.finish_time > 0:
+			return  # disabled if the game is over
 		if Game.new_game:
 			Game.set_mines(self.cord)
 		if self.state.value < 2 or self.state is self.States.QUERY:
@@ -306,10 +309,11 @@ class Minefield:
 
 	def onRightClick(self):
 		# cycle through field states
-		if self.state is self.States.DUG:
+		if self.state is (self.States.DUG or self.States.MINE):
 			return
 		# Simply put: skip over the dug state if it's next
-		_next = self.state.next if self.state.next is not self.States.DUG else self.state.next.next
+		invalid = ['DUG', 'MINE']
+		_next = self.state.next if self.state.next.name not in invalid else self.state.next.next
 		print(f'Changing field state to {_next.name.lower()}.')
 		self.state = _next
 
