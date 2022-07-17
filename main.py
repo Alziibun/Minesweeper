@@ -118,15 +118,21 @@ class Game:
 			file.write(cls.scores)
 
 	@classmethod
-	def reveal_mines(cls):
+	def validate(cls):
+		mine_chk = cls.rules['mines']
 		for fieldlist in cls.field:
 			for field in fieldlist:
 				if field.ismine:
-					field.state = 'mine'
+					if field.state.name == 'FLAG':
+						mine_chk -= 1
+						field.state = 'VALID'
+					else:
+						field.state = 'MINE' 
+					if mine_chk == 0:
+						return True
+		return False
 
 	@classmethod
-	def validate_flags(cls):
-		mine_chk = cls.rules['mines']
 	def check_remaining(cls):
 		# checks the number of fresh fields
 		square = cls.rules['size'] ** 2
@@ -292,10 +298,8 @@ class Minefield:
 			self.button[index] = ref.style[index]
 		#print('Finished styling button.')
 
-	def onclick(self):
+	def onClick(self):
 		# change the state of the minefield and update the button
-		if Game.finish_time > 0:
-			return  # disabled if the game is over
 		if Game.new_game:
 			Game.set_mines(self.cord)
 		if self.state.value < 2 or self.state is self.States.QUERY:
