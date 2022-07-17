@@ -131,7 +131,7 @@ class Game:
 
 
 
-class Player(Game):
+class Player:
 	"""
 	Handles Player data
 	"""
@@ -165,7 +165,7 @@ class Player(Game):
 	"""
 
 
-class Minefield(Game):
+class Minefield:
 	"""
 	handles Minefields
 	"""
@@ -361,7 +361,7 @@ class Minefield(Game):
 				continue
 			m.bloom()
 
-class Window(Game):
+class Window:
 	"""
 	handles most of the rendering side of things
 	"""
