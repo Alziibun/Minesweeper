@@ -206,15 +206,15 @@ class Minefield:
 		self._x = 0
 		self._y = 0
 		buttonfont = font.Font(weight='bold')
-		self._button = Button(Window.playfield,
+		self.button = Button(Window.playfield,
 			height=1,
 			width=2,
 			font=buttonfont,
 			padx=-3,
 			pady=-3)
-		self._button.configure(command=lambda: self.onclick())
+		self.button.configure(command=self.onClick)
 		self.stylize()
-		self._button.bind('<Button-3>', lambda x: self.onRightClick())
+		self.button.bind('<Button-3>', self.onRightClick)
 
 	"""
 	Properties
@@ -238,11 +238,6 @@ class Minefield:
 	@property
 	def cord(self):
 		return (self.x, self.y)
-
-	@property
-	def button(self):
-		return self._button
-	
 	
 	"""
 	Setters
