@@ -192,12 +192,13 @@ class Minefield:
 				self.prev = prev
 				self.next = first
 
-			#   Relief  | button color | Text | State
-		FRESH = GROOVE,  None,          None,  NORMAL
-		DUG   = SUNKEN,  'light grey',  None,  NORMAL
-		QUERY = GROOVE,  None,          '?',   NORMAL
-		FLAG  = GROOVE,  None,          'X',   DISABLED
-		MINE  = GROOVE,  'red',         'M',   DISABLED
+			#   Relief  | button color | Text | State    | Can be switched to with RMB?
+		FRESH = GROOVE,  None,          None,  NORMAL,    True
+		DUG   = SUNKEN,  'light grey',  None,  NORMAL,    False
+		QUERY = GROOVE,  None,          '?',   NORMAL,    True
+		FLAG  = GROOVE,  None,          'X',   DISABLED,  True
+		MINE  = GROOVE,  'red',         'M',   DISABLED,  False
+		VALID = GROOVE,  'green',       'O',   DISABLED,  False
 
 	def __init__(self, ismine = False):
 		self._ismine = ismine
