@@ -349,6 +349,9 @@ class Minefield:
 			return
 		if len(checklist) > 0:
 			self.state = 'dug'
+			Game.field_remain -= 1
+			if Game.field_remain <= 0:
+				Game.end() 
 			self.button['text'] = str(len(checklist))
 			match len(checklist):
 				case 1: self.button['fg'] = 'blue'
