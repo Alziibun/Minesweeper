@@ -55,7 +55,7 @@ class Game:
 		cls.new_game = True
 		cls.new_field(size)
 		cls.window.render_field()
-		cls.scores = scores or cls.load_scores()
+		cls.scores = cls.scores or cls.load_scores()
 		Window.setTitlebar(f'Grid Size : {size} | Mines : {mines}')
 
 
