@@ -92,15 +92,18 @@ class Game:
 		print('Time is now being recorded.')
 
 	@classmethod
-	def end(cls, win=False):
-		cls.end_game = False
-		if win:
+	def end(cls):
+		cls.end_game = True
+		if cls.validate() and cls.check_remaining():
+			# WIN
+			print('You win!')
 			cls.finish_time = time.datetime.now()
-
+			print('--------------')
+			print(f'Your time was: {str(cls.score).split(".")[0]}')
 		else:
-			print('Ending game...')
-			cls.reveal_mines()
-			tk.after(3000, lambda: cls.window.menu_main())
+			# LOSE
+			print('Game over.')
+		tk.after(3000, lambda: cls.window.menu_main())
 
 	@classmethod
 	def load_scores(cls):
