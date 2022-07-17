@@ -305,15 +305,15 @@ class Minefield:
 		else:
 			print('The Player cannot dig here.')
 
-	def onRightClick(self):
+	def onRightClick(self, event):
 		# cycle through field states
-		if self.state is (self.States.DUG or self.States.MINE):
-			return
-		# Simply put: skip over the dug state if it's next
-		invalid = ['DUG', 'MINE']
-		_next = self.state.next if self.state.next.name not in invalid else self.state.next.next
-		print(f'Changing field state to {_next.name.lower()}.')
-		self.state = _next
+		if self.state.r_clickable:
+			state = self.state.next
+			while not state.r_clickable:
+				state = state.next
+			else:
+				print(f'Changing field state to {state.name.lower()}.')
+				self.state = state
 
 	def bloom(self):
 		# branch out and find mines
