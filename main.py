@@ -30,6 +30,7 @@ class Game:
 		mines      = 10,
 		flag_limit = 0)
 	new_game = True
+	end_game = False
 	scores = None
 	start_time  = 0
 	finish_time = 0
@@ -38,6 +39,7 @@ class Game:
 		print(f'| Grid: {size}x{size}  || Mines: {mines} |')
 		print(f'=========== NEW GAME ==========')
 		cls = self.__class__
+		cls.end_game = False
 		cls.current = self
 		cls.rules = dict(
 			size       = size,
