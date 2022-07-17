@@ -181,12 +181,13 @@ class Minefield:
 			obj = object.__new__(cls)
 			obj._value_ = value
 			return obj
-		def __init__(self, bRelief, bgColor, text, state):
+		def __init__(self, bRelief, bgColor, text, state, r_clickable):
 			self.style = dict(
 				relief = bRelief,
 				bg = bgColor or 'SystemButtonFace',
 				text = text or '',
 				state = state)
+			self.r_clickable = r_clickable
 			cls = self.__class__
 			if len(cls):
 				all = list(cls)
